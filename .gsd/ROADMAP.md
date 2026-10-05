@@ -82,21 +82,25 @@
 ---
 
 ### Phase 4: Testing
-**Status**: ⬜ Not Started
-**Objective**: Comprehensive test suite covering all 12 specified scenarios
+**Status**: ✅ Complete
+**Objective**: Comprehensive test suite covering all 20 specified scenarios
 **Requirements**: REQ-19
 
 **Delivers:**
 - `test/health.test.js` — Health endpoint tests
-- `test/auth.test.js` — Authentication tests
-- `test/routing.test.js` — Forwarding and streaming tests
-- `test/failover.test.js` — Failover and 429 behavior tests
+- `test/auth.test.js` — Authentication tests (Authorization & x-api-key)
+- `test/forwarding.test.js` — Request forwarding, body & header isolation
+- `test/streaming.test.js` — Unbuffered SSE streaming tests
+- `test/failover.test.js` — 408/500/502/503/504 transient failover & max 1 alternate attempt
+- `test/quota.test.js` — 429, 402, and quota exhaustion non-rotation tests
+- `test/security.test.js` — Log secret redaction & harmless field preservation
+- `test/integration.test.js` — Timeout, cooldown recovery, and graceful shutdown
 
 **Exit Criteria:**
-- All 12 test scenarios pass
-- Tests run via `npm test`
+- All 35 test cases pass across 8 test suites
+- Tests run deterministically via `npm test`
 - No real API calls in tests (mock OpenRouter)
-- No secrets in test fixtures
+- No secrets in test fixtures or logs
 
 **Depends on:** Phase 3 (server, router)
 
