@@ -107,7 +107,7 @@ async function fetchWithTimeout(url, options, timeoutMs) {
  * Main router request handler.
  * Proxies request to OpenRouter with single failover on transient errors.
  */
-export async function handleRequest(req, res) {
+export async function handleRequest(req, res, credManager = credentialsManager) {
   const startTime = Date.now();
 
   // 1. Validate local authentication
@@ -134,7 +134,7 @@ export async function handleRequest(req, res) {
   }
 
   // 2. Select initial healthy credential
-  const primaryCred = credentialsManager.getCredential();
+  const primaryCred = credManager.getCredential();
   if (!primaryCred) {
     const status = 503;
     res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -198,8 +198,8 @@ export async function handleRequest(req, res) {
 
       // Check for transient failure (408, 500, 502, 503, 504)
       if (TRANSIENT_STATUS_CODES.has(response.status) && attempt === 0) {
-        credentialsManager.markFailed(currentCred.id);
-        const alternateCred = credentialsManager.getCredential(currentCred.id);
+        credManager.markFailed(currentCred.id);
+        const alternateCred = credManager.getCredential(currentCred.id);
         if (alternateCred) {
           logger.warn('Transient upstream status received, triggering failover', {
             failedCredential: currentCred.id,
@@ -214,18 +214,18 @@ export async function handleRequest(req, res) {
 
       // Successful or non-transient status (including 200, 400, 401, 402, 403, 404, 429)
       upstreamResponse = response;
-      if (response.ok || response.status === 429 || response.status === 402) {
-        credentialsManager.markSuccess(currentCred.id);
-      } else if (TRANSIENT_STATUS_CODES.has(response.status)) {
-        credentialsManager.markFailed(currentCred.id);
+      if (!TRANSIENT_STATUS_CODES.has(response.status)) {
+        credManager.markSuccess(currentCred.id);
+      } else {
+        credManager.markFailed(currentCred.id);
       }
       break;
     } catch (err) {
       lastError = err;
+      credManager.markFailed(currentCred.id);
       // Network error or timeout is transient
       if (attempt === 0) {
-        credentialsManager.markFailed(currentCred.id);
-        const alternateCred = credentialsManager.getCredential(currentCred.id);
+        const alternateCred = credManager.getCredential(currentCred.id);
         if (alternateCred) {
           logger.warn('Transient network/timeout error, triggering failover', {
             failedCredential: currentCred.id,

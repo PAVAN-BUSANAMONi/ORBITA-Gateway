@@ -1,9 +1,9 @@
 import 'dotenv/config';
 
-function loadCredentials() {
+export function loadCredentials(env = process.env) {
   const credentials = [];
   for (let i = 1; i <= 20; i++) {
-    const key = process.env[`OPENROUTER_KEY_${i}`];
+    const key = env[`OPENROUTER_KEY_${i}`];
     if (key && key.trim()) {
       credentials.push({ id: `KEY_${i}`, key: key.trim() });
     }
@@ -19,7 +19,7 @@ function loadConfig() {
     );
   }
 
-  const credentials = loadCredentials();
+  const credentials = loadCredentials(process.env);
   if (credentials.length === 0) {
     console.warn(
       '[WARN] No OpenRouter credentials configured (OPENROUTER_KEY_1..20). Gateway will return HTTP 503 for proxy requests until credentials are added.'

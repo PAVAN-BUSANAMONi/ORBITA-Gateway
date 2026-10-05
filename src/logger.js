@@ -1,4 +1,4 @@
-const SENSITIVE_FIELD_NAMES = /^(api_?key|authorization|router_?token|token|secret|password|auth|x-api-key|xApiKey)$/i;
+const SENSITIVE_FIELD_NAMES = /^(key|api_?key|authorization|router_?token|token|secret|password|auth|x-api-key|xApiKey)$/i;
 
 /**
  * Redacts secret patterns from string values and log messages.
@@ -27,6 +27,13 @@ export function sanitize(data) {
   if (data === null || data === undefined) return data;
   if (typeof data === 'string') return sanitizeString(data);
   if (typeof data !== 'object') return data;
+  if (data instanceof Error) {
+    return {
+      name: data.name,
+      message: sanitizeString(data.message),
+      stack: sanitizeString(data.stack),
+    };
+  }
   if (Array.isArray(data)) return data.map(sanitize);
 
   const clean = {};

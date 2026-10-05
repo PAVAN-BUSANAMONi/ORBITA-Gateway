@@ -184,6 +184,12 @@ Claude Code requires unbuffered Server-Sent Events (SSE) for interactive token d
 
 ## 8. Failover & Health Rules
 
+### Multi-Credential Pool (OPENROUTER_KEY_1..20)
+* **Deterministic Credential IDs**: Configured keys are assigned IDs `KEY_1` through `KEY_20` matching their slot.
+* **Flexible & Sparse Numbering**: Numbering does not need to be consecutive. Slots can be sparsely populated (e.g. `KEY_1`, `KEY_3`, `KEY_8`, `KEY_12`).
+* **12-Key Operation**: Cleanly operates with 12 configured credentials, 1 key, 2 keys, 20 keys, or an empty pool.
+* **Strict Anti-Abuse Policy**: Multiple credentials are provided strictly for **authorized high availability and transient infrastructure failover**. The gateway **never** implements quota evasion, rate-limit circumvention, or account hopping.
+
 ### Transient Failover (Allowed Once Per Request)
 Transient failures are temporary infrastructure glitches where an alternate credential can succeed. Failover is triggered on:
 * Connection failure (`ECONNREFUSED`, `ENOTFOUND`, network drop)
@@ -205,7 +211,7 @@ Transient failures are temporary infrastructure glitches where an alternate cred
 The gateway **never** switches credentials for:
 * **HTTP `429` (Too Many Requests)**: Rate limits are passed directly back to Claude Code.
 * **HTTP `402` (Payment Required / Insufficient Credits)**: Quota errors are passed directly back to Claude Code.
-* **Account Usage Limits**: Bypassing provider account limits through rotation is forbidden.
+* **Account Usage Limits**: Bypassing provider account limits through rotation is strictly forbidden.
 * **Client Errors (`400`, `401`, `403`, `404`)**: Returned directly to the client.
 
 ---
@@ -241,21 +247,22 @@ The gateway **never** switches credentials for:
 
 ## 11. Testing & Validation
 
-Run the permanent test suite covering 35 automated scenarios across 8 test suites:
+Run the permanent test suite covering 50 automated scenarios across 9 test suites:
 
 ```powershell
 npm test
 ```
 
 ### Test Suites Included
+* `test/credentials.test.js`: 1-key, multi-key, 12-key, 20-key, zero-key, sparse numbering, deduplication, cooldown recovery, and secret isolation.
 * `test/health.test.js`: Health endpoint response, schema, and secret isolation.
 * `test/auth.test.js`: Authentication guard (Bearer, raw token, x-api-key, 401 error schema).
 * `test/forwarding.test.js`: Host removal, credential injection, body & Anthropic header preservation.
-* `test/streaming.test.js`: Unbuffered chunk-by-chunk SSE streaming fidelity.
-* `test/failover.test.js`: 408/500/502/503/504 transient failover & single alternate attempt enforcement.
+* `test/streaming.test.js`: Unbuffered chunk-by-chunk SSE streaming fidelity and gzip decompression regression protection.
+* `test/failover.test.js`: 408/500/502/503/504 transient failover, network drops, and single alternate attempt enforcement.
 * `test/quota.test.js`: 429, 402, and account-limit non-rotation pass-through verification.
 * `test/security.test.js`: Log secret redaction and harmless field preservation.
-* `test/integration.test.js`: Timeout abort (504), cooldown recovery, and graceful shutdown.
+* `test/integration.test.js`: Timeout abort (504), all credentials cooldown (503), cooldown recovery, and graceful shutdown.
 
 > **Validation Note**: All automated tests run against local, deterministic mock upstream servers. No live calls to OpenRouter or the Nemotron model are performed during automated testing. Live validation occurs only when you configure active credentials in `.env`.
 

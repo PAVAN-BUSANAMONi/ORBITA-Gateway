@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import config from './config.js';
 import logger from './logger.js';
 import { handleHealth } from './health.js';
@@ -60,8 +62,19 @@ export function startServer() {
   return server;
 }
 
+function isDirectRun() {
+  if (!process.argv[1]) return false;
+  const scriptPath = process.argv[1].replace(/\\/g, '/');
+  if (import.meta.url.endsWith(scriptPath)) return true;
+  try {
+    return fileURLToPath(import.meta.url).toLowerCase() === path.resolve(process.argv[1]).toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 // Start automatically when executed directly as main script
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+if (isDirectRun()) {
   startServer();
 }
 

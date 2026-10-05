@@ -143,7 +143,17 @@ The gateway tracks credential health in memory without persisting state to disk.
        └──────────┘
 ```
 
-### Failover Rules
+### Multi-Credential Pool Architecture
+* **Capacity**: Supports `OPENROUTER_KEY_1` through `OPENROUTER_KEY_20`.
+* **Deterministic Identification**: Credentials receive deterministic IDs matching their slot number (`KEY_1`, `KEY_2`, ..., `KEY_20`).
+* **Sparse & Flexible Population**: Keys do not need to be consecutive. For example, configuring `KEY_1`, `KEY_3`, `KEY_8`, and `KEY_12` loads exactly 4 valid credentials without errors.
+* **12-Key Operation**: Cleanly handles full 12-key pools (or any count from 1 to 20), deduplicating IDs and skipping empty or whitespace-only slots.
+* **Zero Secret Exposure**: Credential keys are isolated in memory and never exposed through logs, health endpoints, or error payloads.
+
+### Failover Rules & Authorized Reliability Purpose
+> [!IMPORTANT]
+> **Legitimate Reliability / Failover Only**: Multiple credentials are supported strictly for authorized high availability and transient infrastructure failover. They must **never** be used to circumvent provider usage limits, evade rate limits, bypass account quotas, or perform abusive account hopping.
+
 * **Transient Infrastructure Failures (Failover Enabled)**:
   * Network connection error (`ECONNREFUSED`, `ENOTFOUND`, fetch abort)
   * Request timeout (exceeding `REQUEST_TIMEOUT_MS`)

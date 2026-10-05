@@ -47,16 +47,15 @@ describe('Transient Failure & Failover Routing', () => {
   });
 
   after(async () => {
+    if (credManager) credManager.reset();
     if (gatewayServer) await new Promise((r) => gatewayServer.close(r));
     if (upstreamServer) await new Promise((r) => upstreamServer.close(r));
   });
 
   beforeEach(() => {
     upstreamRequests.length = 0;
-    // Reset both credentials to healthy before each test
     if (credManager) {
-      credManager.markSuccess('KEY_1');
-      credManager.markSuccess('KEY_2');
+      credManager.reset();
     }
   });
 
@@ -103,6 +102,42 @@ describe('Transient Failure & Failover Routing', () => {
     });
   }
 
+  test('fails over to alternate credential on upstream network connection error', async () => {
+    let attempts = 0;
+    upstreamHandler = (req, res) => {
+      attempts++;
+      if (attempts === 1) {
+        req.socket.destroy();
+      } else {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, attempt: attempts }));
+      }
+    };
+
+    const res = await fetch(`http://127.0.0.1:${gatewayPort}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer failover-test-token',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ test: 'network-failover' }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.strictEqual(data.attempt, 2);
+    assert.strictEqual(upstreamRequests.length, 2);
+    assert.strictEqual(
+      upstreamRequests[0].headers['authorization'],
+      'Bearer sk-or-v1-primary-key'
+    );
+    assert.strictEqual(
+      upstreamRequests[1].headers['authorization'],
+      'Bearer sk-or-v1-backup-key'
+    );
+  });
+
   test('enforces maximum ONE alternate attempt when both credentials fail (no infinite loops)', async () => {
     upstreamHandler = (req, res) => {
       res.writeHead(503, { 'Content-Type': 'application/json' });
@@ -131,5 +166,25 @@ describe('Transient Failure & Failover Routing', () => {
       upstreamRequests[1].headers['authorization'],
       'Bearer sk-or-v1-backup-key'
     );
+  });
+
+  test('returns HTTP 502 Bad Gateway when all attempts fail with network connection error', async () => {
+    upstreamHandler = (req, res) => {
+      req.socket.destroy();
+    };
+
+    const res = await fetch(`http://127.0.0.1:${gatewayPort}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer failover-test-token',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ test: 'network-double-failure' }),
+    });
+
+    assert.strictEqual(res.status, 502);
+    const data = await res.json();
+    assert.strictEqual(data.error.type, 'upstream_connection_error');
+    assert.strictEqual(upstreamRequests.length, 2);
   });
 });

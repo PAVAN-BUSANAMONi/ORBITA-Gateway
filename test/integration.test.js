@@ -28,12 +28,18 @@ describe('System Integration & Edge Cases', () => {
 
     // 3. Start gateway server
     const { createServer } = await import('../src/server.js');
+    const { default: cm } = await import('../src/credentials.js');
+    cm.setCooldownMs(200);
+
     gatewayServer = createServer();
     await new Promise((r) => gatewayServer.listen(0, '127.0.0.1', r));
     gatewayPort = gatewayServer.address().port;
   });
 
   after(async () => {
+    const { default: cm } = await import('../src/credentials.js');
+    cm.setCooldownMs(null);
+    cm.reset();
     if (gatewayServer) await new Promise((r) => gatewayServer.close(r));
     if (upstreamServer) await new Promise((r) => upstreamServer.close(r));
   });
@@ -64,9 +70,8 @@ describe('System Integration & Edge Cases', () => {
   test('returns 503 when all credentials are in cooldown', async () => {
     const { default: credManager } = await import('../src/credentials.js');
 
-    // Force all credentials into cooldown
-    credManager.markFailed('KEY_1');
-    credManager.markFailed('KEY_2');
+    // Force all credentials in pool into cooldown
+    credManager.markAllFailed();
 
     const res = await fetch(`http://127.0.0.1:${gatewayPort}/v1/messages`, {
       method: 'POST',
@@ -92,7 +97,7 @@ describe('System Integration & Edge Cases', () => {
     // Verify credential manager now returns a healthy credential again
     const cred = credManager.getCredential();
     assert.ok(cred !== null);
-    assert.ok(cred.id === 'KEY_1' || cred.id === 'KEY_2');
+    assert.match(cred.id, /^KEY_/);
 
     // Normal requests should succeed again
     upstreamResponder = (req, res) => {
@@ -112,6 +117,9 @@ describe('System Integration & Edge Cases', () => {
     assert.strictEqual(res.status, 200);
     const data = await res.json();
     assert.strictEqual(data.recovered, true);
+
+    // Reset health for subsequent test suites
+    credManager.reset();
   });
 
   test('supports graceful server startup and shutdown', async () => {
