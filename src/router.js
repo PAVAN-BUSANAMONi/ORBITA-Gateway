@@ -14,6 +14,7 @@ const STRIP_INCOMING_HEADERS = new Set([
   'transfer-encoding',
   'upgrade',
   'content-length',
+  'accept-encoding',
 ]);
 
 // Headers that should not be copied from upstream to downstream response
@@ -21,6 +22,8 @@ const STRIP_UPSTREAM_RESPONSE_HEADERS = new Set([
   'connection',
   'keep-alive',
   'transfer-encoding',
+  'content-encoding',
+  'content-length',
 ]);
 
 /**
