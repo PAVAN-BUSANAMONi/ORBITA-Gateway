@@ -6,9 +6,9 @@
 
 ## Current Position
 
-- **Phase**: Phase 4 Complete (35 tests passing)
-- **Status**: Ready for Phase 5 (Documentation & Polish)
-- **Next Action**: Awaiting user approval to proceed with Phase 5
+- **Phase**: Milestone v1.0 Complete (All 5 Phases complete)
+- **Status**: Production-ready local gateway
+- **Next Action**: Ready for user to add live OpenRouter keys to .env and connect Claude Code
 
 ## Session Log
 
@@ -18,6 +18,7 @@
 - Implemented Phase 2: Credential Management & Health tracking
 - Implemented Phase 3: Core Proxy, header isolation, unbuffered streaming, transient failover
 - Implemented Phase 4: Comprehensive test suite across 8 files (35 tests, 100% pass)
+- Implemented Phase 5: Documentation & Polish (README.md, docs/architecture.md, .env.example)
 
 ## Key Facts
 
