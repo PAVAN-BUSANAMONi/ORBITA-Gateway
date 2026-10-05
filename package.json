@@ -1,0 +1,22 @@
+{
+  "name": "orbita-gateway",
+  "version": "1.0.0",
+  "description": "Local API gateway between Claude Code and OpenRouter",
+  "main": "src/server.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.5"
+  }
+}
