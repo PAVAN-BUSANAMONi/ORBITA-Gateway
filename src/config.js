@@ -21,8 +21,8 @@ function loadConfig() {
 
   const credentials = loadCredentials();
   if (credentials.length === 0) {
-    throw new Error(
-      'At least one OPENROUTER_KEY_N credential is required (OPENROUTER_KEY_1 through OPENROUTER_KEY_20). Set them in your .env file.'
+    console.warn(
+      '[WARN] No OpenRouter credentials configured (OPENROUTER_KEY_1..20). Gateway will return HTTP 503 for proxy requests until credentials are added.'
     );
   }
 

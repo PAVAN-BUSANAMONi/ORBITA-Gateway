@@ -8,13 +8,17 @@
 **Rationale**: Reduces attack surface, avoids version conflicts, and keeps the project maintainable. Native fetch (Node 18+) and http module are sufficient for this use case.
 **Consequences**: No Express, no Axios. Routing and middleware must be hand-rolled, but the gateway has very few routes.
 
-## ADR-002: 429 Pass-Through Policy
+## ADR-002: Rate Limit and Quota Exhaustion Pass-Through Policy
 **Date**: 2026-10-05
 **Status**: Accepted
-**Context**: When OpenRouter returns 429 (rate limited), should the gateway try another credential?
-**Decision**: No. Return the 429 directly to Claude Code. Do not rotate credentials to bypass rate limits.
-**Rationale**: Rate limits exist for a reason. Rotating credentials to bypass them is abuse of the API provider. The user explicitly requested this policy.
-**Consequences**: Claude Code will see 429 errors and must handle them. Logs will record the event for visibility.
+**Context**: When OpenRouter returns 429 (rate limited), 402 (payment required), or account quota exhaustion / usage-limit errors, should the gateway try another credential?
+**Decision**: No. Return the upstream error directly to Claude Code without credential rotation. Specifically:
+- HTTP 429 → no rotation
+- HTTP 402 → no rotation
+- Quota exhaustion / account usage limits → no rotation
+- Only transient infrastructure failures (connection failure, timeout, 408, 500, 502, 503, 504) may trigger failover.
+**Rationale**: Rate limits and account quotas exist for provider-level constraints. Rotating credentials to bypass them is an abuse vector and masks legitimate account status. Transient infrastructure errors represent temporary networking or gateway blips where failover is appropriate.
+**Consequences**: Claude Code receives upstream rate limit and quota responses as-is. Logs record the event safely without leaking secrets or attempting unauthorized credential rotation.
 
 ## ADR-003: In-Memory Health Tracking Only
 **Date**: 2026-10-05

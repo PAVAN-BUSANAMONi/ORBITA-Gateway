@@ -16,7 +16,7 @@
 | REQ-10 | Track credential health in memory with configurable cooldown (`KEY_COOLDOWN_MS`, default 30000) | Goal 3 | Pending |
 | REQ-11 | Failover to alternate credential on transient errors (connection failure, timeout, 408, 500, 502, 503, 504) | Goal 3 | Pending |
 | REQ-12 | Maximum one alternate credential attempt per request (no infinite retries) | Goal 3 | Pending |
-| REQ-13 | HTTP 429 returns upstream response to Claude Code — no credential rotation | Goal 3 | Pending |
+| REQ-13 | HTTP 429, HTTP 402, quota exhaustion, and account usage-limit errors must be passed through to the client and MUST NEVER trigger credential rotation | Goal 3 | Pending |
 | REQ-14 | Never expose API keys through any endpoint, log, or response | Goal 4 | Pending |
 | REQ-15 | Never log Authorization headers, API keys, or sensitive request content | Goal 4 | Pending |
 | REQ-16 | Structured logging with timestamp, method, path, status, credential ID, latency, failover events | Goal 5 | Pending |
